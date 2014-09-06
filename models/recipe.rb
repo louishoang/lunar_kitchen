@@ -1,3 +1,5 @@
+require_relative 'ingredient'
+
 def db_connection
     begin
       connection = PG.connect(dbname: 'recipes')
@@ -19,14 +21,16 @@ def get_recipes_by_params(query, id)
   end
 end
 
+#### Class start #####
+
 class Recipe
   attr_reader :id, :name, :instructions, :description
 
   def initialize(id, name, instructions, description)
     @id = id
     @name = name
-    @instructions = instructions
-    @description = description
+    @instructions = instructions ||= "This recipe doesn't have any instructions."
+    @description = description ||= "This recipe doesn't have a description."
   end
 
   def self.all
@@ -40,17 +44,22 @@ class Recipe
   def self.find(id)
     query = 'SELECT * FROM recipes
             WHERE recipes.id = $1'
-    recipe_in_array = get_recipes_by_params(query, id).to_a
-    recipe = Recipe.new(recipe_in_array[0]["id"], recipe_in_array[0]["name"], recipe_in_array[0]["instructions"], recipe_in_array[0]["description"] )
+    recipes = get_recipes_by_params(query, id).to_a
+    recipe = Recipe.new(recipes[0]["id"], recipes[0]["name"], recipes[0]["instructions"], recipes[0]["description"] )
+  end
 
+  def ingredients
+    self.class.find_ingredients(id)
+  end
+
+  def self.find_ingredients(id)
+    ingredients = []
+    query = 'SELECT * FROM ingredients
+            WHERE ingredients.recipe_id = $1;'
+    ingredients_list = get_recipes_by_params(query, id).to_a
+    ingredients_list.each do |ingredient|
+      ingredients << Ingredient.new(ingredient["id"], ingredient["name"], ingredient["recipe_id"])
+    end
+    ingredients
   end
 end
-
-
-# SELECT recipes.id AS id, recipes.name AS name,
-#             recipes.description, recipes.instructions,
-#             ingredients.id AS ingredient_id,
-#             ingredients.name AS ingredient_name
-#             FROM recipes LEFT OUTER JOIN ingredients
-#             ON recipes.id = ingredients.recipe_id
-#             WHERE recipes.id = $1
