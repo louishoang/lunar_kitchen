@@ -49,17 +49,15 @@ class Recipe
   end
 
   def ingredients
-    self.class.find_ingredients(id)
-  end
-
-  def self.find_ingredients(id)
     ingredients = []
     query = 'SELECT * FROM ingredients
             WHERE ingredients.recipe_id = $1;'
+    binding.pry
     ingredients_list = get_recipes_by_params(query, id).to_a
     ingredients_list.each do |ingredient|
       ingredients << Ingredient.new(ingredient["id"], ingredient["name"], ingredient["recipe_id"])
     end
     ingredients
   end
+
 end
