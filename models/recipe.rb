@@ -26,38 +26,36 @@ end
 class Recipe
   attr_reader :id, :name, :instructions, :description
 
-  def initialize(id, name, instructions, description)
-    @id = id
-    @name = name
-    @instructions = instructions ||= "This recipe doesn't have any instructions."
-    @description = description ||= "This recipe doesn't have a description."
+  def initialize(data)
+    @id = data["id"]
+    @name = data["name"]
+    @instructions = data["instructions"] ||= "This recipe doesn't have any instructions."
+    @description = data["description"] ||= "This recipe doesn't have a description."
   end
 
   def self.all
-    query = 'SELECT * FROM recipes'
+    query = %Q{SELECT * FROM recipes}
     recipes = get_recipes(query).to_a
     recipes.map do |result|
-      recipe = Recipe.new(result["id"], result["name"], result["instructions"], result["description"])
+      recipe = Recipe.new(result)
     end
   end
 
   def self.find(id)
-    query = 'SELECT * FROM recipes
-            WHERE recipes.id = $1'
+    query = %Q{SELECT * FROM recipes
+            WHERE recipes.id = $1}
     recipes = get_recipes_by_params(query, id).to_a
-    recipe = Recipe.new(recipes[0]["id"], recipes[0]["name"], recipes[0]["instructions"], recipes[0]["description"] )
+    recipe = Recipe.new(recipes[0])
   end
 
   def ingredients
     ingredients = []
-    query = 'SELECT * FROM ingredients
-            WHERE ingredients.recipe_id = $1;'
-    binding.pry
+    query = %Q{SELECT * FROM ingredients
+            WHERE ingredients.recipe_id = $1}
     ingredients_list = get_recipes_by_params(query, id).to_a
     ingredients_list.each do |ingredient|
-      ingredients << Ingredient.new(ingredient["id"], ingredient["name"], ingredient["recipe_id"])
+      ingredients << Ingredient.new(ingredient)
     end
     ingredients
   end
-
 end
