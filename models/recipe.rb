@@ -1,35 +1,56 @@
 def db_connection
     begin
-    connection = PG.connect(dbname: 'recipes')
+      connection = PG.connect(dbname: 'recipes')
     yield(connection)
     ensure
       connection.close
   end
 end
 
-def get_data(query)
+def get_recipes(query)
   db_connection do |conn|
     conn.exec(query)
   end
 end
 
-class Recipe
-  attr_accessor :id, :name
+def get_recipes_by_params(query, id)
+  db_connection do |conn|
+    conn.exec(query, [id])
+  end
+end
 
-  def initialize(recipe)
-    @id = recipe["id"]
-    @name = recipe["name"]
-    @instructions = recipe["instructions"]
-    @description = recipe["description"]
+class Recipe
+  attr_reader :id, :name, :instructions, :description
+
+  def initialize(id, name, instructions, description)
+    @id = id
+    @name = name
+    @instructions = instructions
+    @description = description
   end
 
   def self.all
     query = 'SELECT * FROM recipes'
-    results = get_data(query).to_a
-    results.map do |result|
-      recipe = Recipe.new(result)
+    recipes = get_recipes(query).to_a
+    recipes.map do |result|
+      recipe = Recipe.new(result["id"], result["name"], result["instructions"], result["description"])
     end
+  end
+
+  def self.find(id)
+    query = 'SELECT * FROM recipes
+            WHERE recipes.id = $1'
+    recipe_in_array = get_recipes_by_params(query, id).to_a
+    recipe = Recipe.new(recipe_in_array[0]["id"], recipe_in_array[0]["name"], recipe_in_array[0]["instructions"], recipe_in_array[0]["description"] )
+
   end
 end
 
 
+# SELECT recipes.id AS id, recipes.name AS name,
+#             recipes.description, recipes.instructions,
+#             ingredients.id AS ingredient_id,
+#             ingredients.name AS ingredient_name
+#             FROM recipes LEFT OUTER JOIN ingredients
+#             ON recipes.id = ingredients.recipe_id
+#             WHERE recipes.id = $1
